@@ -465,13 +465,6 @@ document.getElementById("saveLog").addEventListener("click", () => {
   }
 });
 
-// Limpiar historial
-document.getElementById("clearHistory").addEventListener("click", () => {
-  if (!confirm("¿Seguro que quieres borrar TODO el historial?")) return;
-  localStorage.removeItem("historyLogs");
-  document.getElementById("historyOutput").innerHTML = "";
-});
-
 // Ver historial
 document.getElementById("showHistory").addEventListener("click", loadHistoryByDay);
 
@@ -684,6 +677,15 @@ async function fetchAllPrices() {
     return;
   }
 
+  const today     = new Date().toLocaleDateString();
+  const lastFetch = localStorage.getItem("lastFetchDate");
+  if (lastFetch === today) {
+    const status = document.getElementById("updateStatus");
+    status.textContent = "⚠️ Ya actualizado hoy";
+    setTimeout(() => { status.textContent = ""; }, 3000);
+    return;
+  }
+
   const btn    = document.getElementById("updatePricesBtn");
   const status = document.getElementById("updateStatus");
   btn.disabled = true;
@@ -742,29 +744,53 @@ async function fetchAllPrices() {
   }
 
   updateAll();
+  localStorage.setItem("lastFetchDate", new Date().toLocaleDateString());
   btn.disabled = false;
   status.textContent = `✅ ${updated} actualizadas${failed ? ` · ⚠️ ${failed} sin precio` : ""}`;
   setTimeout(() => { status.textContent = ""; }, 5000);
 }
 
+
 // ==============================
-// 🌅 13. AUTO-FETCH DIARIO
+// 💾 13. EXPORT / IMPORT
 // ==============================
-async function autoFetchIfNeeded() {
-  const lastFetch = localStorage.getItem("lastAutoFetch");
-  const now       = Date.now();
-  const WEEK_MS   = 7 * 24 * 60 * 60 * 1000;
-  if (lastFetch && (now - parseInt(lastFetch)) < WEEK_MS) return;
+document.getElementById("exportData").addEventListener("click", () => {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    data[key] = localStorage.getItem(key);
+  }
+  const date = new Date().toLocaleDateString("es-ES").replace(/\//g, "-");
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `corocoro-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
 
-  const status = document.getElementById("updateStatus");
-  if (status) status.textContent = "🌅 Actualizando precios del día...";
-
-  await fetchAllPrices();
-  saveHistoryLog();
-  localStorage.setItem("lastAutoFetch", Date.now().toString());
-}
-
-autoFetchIfNeeded();
+document.getElementById("importData").addEventListener("click", () => {
+  const input  = document.createElement("input");
+  input.type   = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+        location.reload();
+      } catch {
+        alert("❌ Archivo inválido, asegúrate de importar un backup de CoroCoro.");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
 
 function flashCard(cardId, type) {
   const el = document.getElementById(`price-${cardId}`)?.closest(".card");
