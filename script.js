@@ -51,8 +51,111 @@ const cardsData = [
 // 🔗 2. REFS DOM
 // ==============================
 const container = document.getElementById("cards-container");
-const binder = document.getElementById("binderView");
-const wrapper = document.getElementById("binderViewWrapper");
+const binder    = document.getElementById("binderView");
+const wrapper   = document.getElementById("binderViewWrapper");
+
+// ==============================
+// 🛒 MODAL COMPRADA
+// ==============================
+(function createCompradaModal() {
+  const m = document.createElement("div");
+  m.id = "compradaModal";
+  m.className = "comprada-overlay hidden";
+  m.innerHTML = `
+    <div class="comprada-panel">
+      <h3 class="comprada-title" id="modalTitle">🛒 Marcar como comprada</h3>
+      <p class="comprada-name" id="modalCardName"></p>
+      <div class="comprada-field">
+        <label>🧾 Precio pagado</label>
+        <div class="comprada-price-input">
+          <span class="euro">€</span>
+          <input type="number" id="modalPrice" placeholder="0.00" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="comprada-field">
+        <label>⭐ Condición</label>
+        <select id="modalCond">
+          <option value="--">--</option>
+          <option value="PO">PO — Poor</option>
+          <option value="PL">PL — Played</option>
+          <option value="LP">LP — Light Played</option>
+          <option value="GD">GD — Good</option>
+          <option value="EX">EX — Excellent</option>
+        </select>
+      </div>
+      <div class="comprada-actions">
+        <button id="modalUnmark" class="btn-modal-unmark hidden">🗑️ Desmarcar</button>
+        <button id="modalCancel" class="btn-modal-cancel">Cancelar</button>
+        <button id="modalConfirm" class="btn-modal-confirm">✅ Confirmar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(m);
+})();
+
+let currentModalCardId = null;
+
+function openCompradaModal(cardId) {
+  currentModalCardId = cardId;
+  const isBought = localStorage.getItem(`check-${cardId}`) === "true";
+  document.getElementById("modalTitle").textContent     = isBought ? "✏️ Editar compra" : "🛒 Marcar como comprada";
+  document.getElementById("modalCardName").textContent  = cardsData.find(c => c.id === cardId)?.name || cardId;
+  document.getElementById("modalPrice").value           = localStorage.getItem(`buy-${cardId}`) || "";
+  document.getElementById("modalCond").value            = localStorage.getItem(`cond-${cardId}`) || "--";
+  document.getElementById("modalUnmark").classList.toggle("hidden", !isBought);
+  document.getElementById("compradaModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("modalPrice").focus(), 50);
+}
+
+function closeCompradaModal() {
+  document.getElementById("compradaModal").classList.add("hidden");
+  currentModalCardId = null;
+}
+
+document.getElementById("modalCancel").addEventListener("click", closeCompradaModal);
+
+document.getElementById("modalUnmark").addEventListener("click", () => {
+  const id = currentModalCardId;
+  if (!id) return;
+  ["check", "buy", "cond", "date-buy"].forEach(k => localStorage.removeItem(`${k}-${id}`));
+  const btn = document.getElementById(`comprada-${id}`);
+  if (btn) { btn.classList.remove("is-bought"); btn.textContent = "🛒 Comprada"; }
+  const cardEl = btn?.closest(".card");
+  if (cardEl) cardEl.removeAttribute("data-cond");
+  closeCompradaModal();
+  updateAll();
+});
+
+document.getElementById("compradaModal").addEventListener("click", e => {
+  if (e.target.id === "compradaModal") closeCompradaModal();
+});
+
+document.getElementById("modalConfirm").addEventListener("click", () => {
+  const id    = currentModalCardId;
+  if (!id) return;
+  const price = document.getElementById("modalPrice").value;
+  const cond  = document.getElementById("modalCond").value;
+  const now   = new Date();
+  const today = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}`;
+
+  localStorage.setItem(`check-${id}`, "true");
+  localStorage.setItem(`buy-${id}`, price);
+  localStorage.setItem(`cond-${id}`, cond);
+  if (!localStorage.getItem(`date-buy-${id}`)) {
+    localStorage.setItem(`date-buy-${id}`, today);
+  }
+
+  const btn = document.getElementById(`comprada-${id}`);
+  if (btn) {
+    btn.classList.add("is-bought");
+    btn.innerHTML = price ? `✅ <span class="btn-price-tag">${parseFloat(price).toFixed(2)}€</span>` : "✅ Comprada";
+  }
+  const cardEl = btn?.closest(".card");
+  if (cardEl) cardEl.setAttribute("data-cond", cond);
+
+  closeCompradaModal();
+  updateAll();
+});
 
 // ==============================
 // 🧩 3. CREAR CARTAS
@@ -86,31 +189,7 @@ cardsData.forEach((card, index) => {
         <input id="date-min-${card.id}" class="date-inline" placeholder="--/--" readonly tabindex="-1">
       </div>
 
-      <div class="price-row">
-        <span class="price-icon">🧾</span>
-        <div class="price-input">
-          <span class="euro">€</span>
-          <input id="buy-${card.id}" class="val-buy" placeholder="0">
-        </div>
-        <input id="date-buy-${card.id}" class="date-inline" placeholder="--/--" readonly tabindex="-1">
-      </div>
-
-      <div class="row" style="margin-top:6px">
-        <span>✔</span>
-        <input type="checkbox" id="check-${card.id}">
-      </div>
-
-      <div class="row condition-row">
-        <span>⭐</span>
-        <select id="cond-${card.id}">
-          <option value="--">--</option>
-          <option value="PO" ${card.condition === "PO" ? "selected" : ""}>PO</option>
-          <option value="PL" ${card.condition === "PL" ? "selected" : ""}>PL</option>
-          <option value="LP" ${card.condition === "LP" ? "selected" : ""}>LP</option>
-          <option value="GD" ${card.condition === "GD" ? "selected" : ""}>GD</option>
-          <option value="EX" ${card.condition === "EX" ? "selected" : ""}>EX</option>
-        </select>
-      </div>
+      <button class="btn-comprada" id="comprada-${card.id}" data-id="${card.id}">🛒 Comprada</button>
 
     </div>
 
@@ -120,23 +199,39 @@ cardsData.forEach((card, index) => {
   `;
 
   container.appendChild(div);
+
+  // Listener directo para evitar que .info bloquee el evento
+  div.querySelector('.btn-comprada').addEventListener('click', e => {
+    e.stopPropagation();
+    openCompradaModal(card.id);
+  });
 });
 
 // ==============================
 // 💾 4. CARGAR LOCALSTORAGE
 // ==============================
-document.querySelectorAll("input, select").forEach(input => {
+document.querySelectorAll("input[id^='price-'], input[id^='min-'], input[id^='date-']").forEach(input => {
   const saved = localStorage.getItem(input.id);
+  if (saved === null) return;
+  if (input.classList.contains("date-inline") && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+    const [, m, d] = saved.split("-");
+    input.value = `${d}/${m}`;
+  } else {
+    input.value = saved;
+  }
+});
 
-  if (saved !== null) {
-    if (input.type === "checkbox") {
-      input.checked = saved === "true";
-    } else if (input.classList.contains("date-inline") && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
-      const [, m, d] = saved.split("-");
-      input.value = `${d}/${m}`;
-    } else {
-      input.value = saved;
+// Restaurar estado comprada + condición
+cardsData.forEach(card => {
+  if (localStorage.getItem(`check-${card.id}`) === "true") {
+    const btn   = document.getElementById(`comprada-${card.id}`);
+    const price = localStorage.getItem(`buy-${card.id}`);
+    if (btn) {
+      btn.classList.add("is-bought");
+      btn.innerHTML = price ? `✅ <span class="btn-price-tag">${parseFloat(price).toFixed(2)}€</span>` : "✅ Comprada";
     }
+    const cardEl = btn?.closest(".card");
+    if (cardEl) cardEl.setAttribute("data-cond", localStorage.getItem(`cond-${card.id}`) || "--");
   }
 });
 
@@ -144,18 +239,17 @@ document.querySelectorAll("input, select").forEach(input => {
 // 📊 5. STATS Y PROGRESO
 // ==============================
 function updateStats() {
-  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-  const total = checkboxes.length;
-  const completed = Array.from(checkboxes).filter(cb => cb.checked).length;
-  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const total     = cardsData.length;
+  const completed = cardsData.filter(c => localStorage.getItem(`check-${c.id}`) === "true").length;
+  const percent   = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const totalEl = document.getElementById("total");
+  const totalEl     = document.getElementById("total");
   const completedEl = document.getElementById("completed");
-  const percentEl = document.getElementById("percent");
+  const percentEl   = document.getElementById("percent");
 
-  if (totalEl) totalEl.textContent = total;
+  if (totalEl)     totalEl.textContent     = total;
   if (completedEl) completedEl.textContent = completed;
-  if (percentEl) percentEl.textContent = percent + "%";
+  if (percentEl)   percentEl.textContent   = percent + "%";
 
   const progressBar = document.getElementById("progress-fill");
   if (progressBar) progressBar.style.width = percent + "%";
@@ -167,23 +261,20 @@ function updateStats() {
   });
 
   let totalSpent = 0;
-  checkboxes.forEach(cb => {
-    if (cb.checked) {
-      const input = document.getElementById(cb.id.replace("check-", "buy-"));
-      if (input) {
-        const value = parseFloat(input.value);
-        if (!isNaN(value)) totalSpent += value;
-      }
+  cardsData.forEach(c => {
+    if (localStorage.getItem(`check-${c.id}`) === "true") {
+      const val = parseFloat(localStorage.getItem(`buy-${c.id}`));
+      if (!isNaN(val)) totalSpent += val;
     }
   });
 
   const totalSaved = totalMin - totalSpent;
 
-  const totalMinEl = document.getElementById("totalMin");
+  const totalMinEl   = document.getElementById("totalMin");
   const totalSpentEl = document.getElementById("totalSpent");
   const totalSavedEl = document.getElementById("totalSaved");
 
-  if (totalMinEl) totalMinEl.textContent = totalMin.toFixed(2) + "€";
+  if (totalMinEl)   totalMinEl.textContent   = totalMin.toFixed(2) + "€";
   if (totalSpentEl) totalSpentEl.textContent = totalSpent.toFixed(2) + "€";
   if (totalSavedEl) totalSavedEl.textContent = totalSaved.toFixed(2) + "€";
 }
@@ -194,9 +285,9 @@ function updateStats() {
 function updateCardColors() {
   document.querySelectorAll(".card").forEach(card => {
     const priceInput = card.querySelector("input[id^='price-']");
-    const minInput = card.querySelector("input[id^='min-']");
-    const badge = card.querySelector(".badge");
-    const tooltip = card.querySelector(".tooltip");
+    const minInput   = card.querySelector("input[id^='min-']");
+    const badge      = card.querySelector(".badge");
+    const tooltip    = card.querySelector(".tooltip");
 
     if (!priceInput || !minInput) return;
 
@@ -204,19 +295,19 @@ function updateCardColors() {
       return parseFloat(val.replace(",", ".").replace(/[^\d.]/g, ""));
     }
 
-    const price = cleanNumber(priceInput.value);
+    const price      = cleanNumber(priceInput.value);
     const registered = cleanNumber(minInput.value);
 
     card.classList.remove("good", "bad", "sniper");
     if (badge) badge.style.display = "none";
 
     if (!isNaN(price) && !isNaN(registered) && registered > 0) {
-      const diff = (price - registered).toFixed(2);
+      const diff    = (price - registered).toFixed(2);
       const percent = ((price / registered - 1) * 100).toFixed(0);
 
       if (price <= registered * 0.9) {
         card.classList.add("sniper");
-        if (badge) badge.style.display = "block";
+        if (badge)   badge.style.display = "block";
         if (tooltip) tooltip.textContent = `🔥 SNIPER → ahora ${price}€ | antes ${registered}€ (${diff}€, ${percent}%)`;
       } else if (price <= registered) {
         card.classList.add("good");
@@ -238,16 +329,15 @@ function updateRanking() {
   const ranking = [];
 
   document.querySelectorAll(".card").forEach(card => {
-    const name = card.querySelector("h3").textContent;
+    const name  = card.querySelector("h3").textContent;
     const price = parseFloat(card.querySelector('[id^="price-"]').value);
-    const min = parseFloat(card.querySelector('[id^="min-"]').value);
+    const min   = parseFloat(card.querySelector('[id^="min-"]').value);
 
     if (!isNaN(price) && !isNaN(min) && min > 0) {
       const diff = price - min;
       let type = "bad";
       if (price <= min * 0.9) type = "sniper";
-      else if (price <= min) type = "good";
-
+      else if (price <= min)  type = "good";
       ranking.push({ name, diff, type });
     }
   });
@@ -262,14 +352,12 @@ function updateRanking() {
   list.innerHTML = "";
 
   ranking.slice(0, 3).forEach((item, i) => {
-    const li = document.createElement("li");
+    const li    = document.createElement("li");
     const emoji = item.type === "sniper" ? "🔥" : item.type === "good" ? "🟢" : "🔴";
-
     li.innerHTML = `
       <span>${i + 1}. ${emoji} ${item.name}</span>
       <span class="rank-${item.type}">${item.diff.toFixed(2)}€</span>
     `;
-
     list.appendChild(li);
   });
 }
@@ -277,20 +365,13 @@ function updateRanking() {
 // ==============================
 // 🎴 8. CONDICIÓN DE CARTAS
 // ==============================
-function updateConditionVisibility() {
-  document.querySelectorAll(".card").forEach(card => {
-    const check = card.querySelector('[id^="check-"]');
-    const condRow = card.querySelector(".condition-row");
-    if (!check || !condRow) return;
-    condRow.style.display = check.checked ? "flex" : "none";
-  });
-}
-
 function updateConditionColors() {
   document.querySelectorAll(".card").forEach(card => {
-    const select = card.querySelector('[id^="cond-"]');
-    if (!select) return;
-    card.setAttribute("data-cond", select.value);
+    const btn = card.querySelector('[id^="comprada-"]');
+    if (!btn) return;
+    const id   = btn.dataset.id;
+    const cond = localStorage.getItem(`cond-${id}`) || "--";
+    card.setAttribute("data-cond", cond);
   });
 }
 
@@ -301,7 +382,6 @@ function updateAll() {
   updateStats();
   updateCardColors();
   updateRanking();
-  updateConditionVisibility();
   updateConditionColors();
 }
 
@@ -310,43 +390,6 @@ updateAll();
 // ==============================
 // 🎯 10. EVENTOS
 // ==============================
-
-// Guardar inputs en localStorage
-document.addEventListener("input", (e) => {
-  const el = e.target;
-  if (!el.id) return;
-
-  if (el.type === "checkbox") {
-    localStorage.setItem(el.id, el.checked);
-    if (el.checked) {
-      const now = new Date();
-      const today = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}`;
-      const cardId = el.id.replace("check-", "");
-      const dateBuy = document.getElementById(`date-buy-${cardId}`);
-      if (dateBuy && !dateBuy.value) {
-        dateBuy.value = today;
-        localStorage.setItem(`date-buy-${cardId}`, today);
-      }
-    }
-    updateStats();
-    updateConditionVisibility();
-  } else {
-    localStorage.setItem(el.id, el.value);
-    updateStats();
-    updateCardColors();
-    updateRanking();
-  }
-});
-
-// Guardar selects en localStorage
-document.addEventListener("change", (e) => {
-  const el = e.target;
-  if (el.tagName === "SELECT") {
-    localStorage.setItem(el.id, el.value);
-    updateConditionColors();
-    updateConditionVisibility();
-  }
-});
 
 // Ordenar cartas
 let sorted = false;
@@ -357,9 +400,9 @@ document.getElementById("sortBtn").addEventListener("click", () => {
   if (!sorted) {
     cards.sort((a, b) => {
       const priceA = parseFloat(a.querySelector('[id^="price-"]')?.value) || 0;
-      const minA = parseFloat(a.querySelector('[id^="min-"]')?.value) || 0;
+      const minA   = parseFloat(a.querySelector('[id^="min-"]')?.value)   || 0;
       const priceB = parseFloat(b.querySelector('[id^="price-"]')?.value) || 0;
-      const minB = parseFloat(b.querySelector('[id^="min-"]')?.value) || 0;
+      const minB   = parseFloat(b.querySelector('[id^="min-"]')?.value)   || 0;
       return (priceA - minA) - (priceB - minB);
     });
     document.getElementById("sortBtn").textContent = "↩️ Orden original";
@@ -379,40 +422,27 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btn && box) btn.addEventListener("click", () => box.classList.toggle("hidden"));
 });
 
-// Guardar log
-document.getElementById("saveLog").addEventListener("click", () => {
-  const today = new Date().toLocaleDateString();
+// Guardar log (función reutilizable)
+function saveHistoryLog() {
+  const today   = new Date().toLocaleDateString();
   const history = JSON.parse(localStorage.getItem("historyLogs")) || {};
-
-  if (history[today]) {
-    const btn = document.getElementById("saveLog");
-    const original = btn.textContent;
-    btn.textContent = "⚠️ Ya guardado hoy";
-    btn.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-    setTimeout(() => {
-      btn.textContent = original;
-      btn.style.background = "";
-    }, 2500);
-    return;
-  }
+  if (history[today]) return false;
 
   const cards = document.querySelectorAll(".card");
-  let log = "";
-  let totalMin = 0;
-  let totalSpent = 0;
-
-  log += `📅 ${today}\n\n`;
+  let log = `📅 ${today}\n\n`;
+  let totalMin = 0, totalSpent = 0;
 
   cards.forEach(card => {
-    const name = card.querySelector("h3").textContent;
+    const name  = card.querySelector("h3").textContent;
     const price = parseFloat(card.querySelector('[id^="price-"]').value) || 0;
-    const min = parseFloat(card.querySelector('[id^="min-"]').value) || 0;
-    const buy = parseFloat(card.querySelector('[id^="buy-"]').value) || 0;
-    const date = card.querySelector('[id^="date-"]')?.value || "-";
+    const min   = parseFloat(card.querySelector('[id^="min-"]').value) || 0;
+    const cbtn  = card.querySelector('[id^="comprada-"]');
+    const id    = cbtn?.dataset.id;
+    const buy   = id ? parseFloat(localStorage.getItem(`buy-${id}`)) || 0 : 0;
+    const date  = card.querySelector('[id^="date-market-"]')?.value || "-";
 
-    totalMin += min;
+    totalMin   += min;
     totalSpent += buy;
-
     log += `${name} → ${price}€ (min ${min}€) [${date || "-"}]\n`;
   });
 
@@ -421,6 +451,18 @@ document.getElementById("saveLog").addEventListener("click", () => {
 
   history[today] = [log];
   localStorage.setItem("historyLogs", JSON.stringify(history));
+  return true;
+}
+
+document.getElementById("saveLog").addEventListener("click", () => {
+  const saved = saveHistoryLog();
+  if (!saved) {
+    const btn      = document.getElementById("saveLog");
+    const original = btn.textContent;
+    btn.textContent      = "⚠️ Ya guardado hoy";
+    btn.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+    setTimeout(() => { btn.textContent = original; btn.style.background = ""; }, 2500);
+  }
 });
 
 // Limpiar historial
@@ -442,13 +484,14 @@ document.getElementById("showBought").addEventListener("click", () => {
     let html = "<h3>🛒 Cartas compradas</h3>";
 
     document.querySelectorAll(".card").forEach(card => {
-      const check = card.querySelector('[id^="check-"]');
-      if (!check?.checked) return;
+      const cbtn = card.querySelector('[id^="comprada-"]');
+      const id   = cbtn?.dataset.id;
+      if (!id || localStorage.getItem(`check-${id}`) !== "true") return;
 
-      const name = card.querySelector("h3").textContent;
-      const buy  = card.querySelector('[id^="buy-"]')?.value || "-";
-      const cond = card.querySelector('[id^="cond-"]')?.value || "--";
-      const date = card.querySelector('[id^="date-buy-"]')?.value || "-";
+      const name      = card.querySelector("h3").textContent;
+      const buy       = localStorage.getItem(`buy-${id}`) || "-";
+      const cond      = localStorage.getItem(`cond-${id}`) || "--";
+      const date      = localStorage.getItem(`date-buy-${id}`) || "-";
       const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" }[cond] || "#94a3b8";
 
       html += `
@@ -480,26 +523,26 @@ document.getElementById("binderBtn").addEventListener("click", () => {
     setTimeout(() => wrapper.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 
     let html = "";
-
     const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" };
 
     cards.forEach(card => {
-      const check = card.querySelector('[id^="check-"]');
-      if (!check?.checked) return;
+      const cbtn  = card.querySelector('[id^="comprada-"]');
+      const id    = cbtn?.dataset.id;
+      if (!id || localStorage.getItem(`check-${id}`) !== "true") return;
 
-      const name = card.querySelector("h3").textContent;
-      const img  = card.querySelector("img").src;
-      const cond = card.querySelector('[id^="cond-"]').value || "--";
+      const name  = card.querySelector("h3").textContent;
+      const img   = card.querySelector("img").src;
+      const cond  = localStorage.getItem(`cond-${id}`) || "--";
+      const buy   = localStorage.getItem(`buy-${id}`);
       const color = condColor[cond] || "#64748b";
 
       html += `
         <div class="binder-card">
-          <div class="binder-sleeve">
-            <img src="${img}">
-          </div>
+          <div class="binder-sleeve"><img src="${img}"></div>
           <div class="binder-info">
             <span class="binder-name">${name}</span>
             <span class="binder-cond" style="color:${color}">${cond}</span>
+            ${buy ? `<span class="binder-price">${parseFloat(buy).toFixed(2)}€</span>` : ""}
           </div>
         </div>
       `;
@@ -508,7 +551,7 @@ document.getElementById("binderBtn").addEventListener("click", () => {
     binder.innerHTML = html;
 
     const totalSlots = Math.ceil(binder.querySelectorAll(".binder-card").length / 9) * 9 || 9;
-    const current = binder.querySelectorAll(".binder-card").length;
+    const current    = binder.querySelectorAll(".binder-card").length;
     for (let i = current; i < totalSlots; i++) {
       binder.innerHTML += `<div class="binder-card binder-empty"><span>+</span></div>`;
     }
@@ -520,23 +563,23 @@ document.getElementById("binderBtn").addEventListener("click", () => {
 });
 
 // Zoom modal
-const modal = document.getElementById("zoomModal");
-const modalImg = document.getElementById("zoomImg");
+const zoomModal    = document.getElementById("zoomModal");
+const zoomModalImg = document.getElementById("zoomImg");
 
 document.addEventListener("click", (e) => {
-  if (e.target.closest(".info") || e.target.closest("select") || e.target.closest("input")) return;
+  if (e.target.closest(".info") || e.target.closest("input") || e.target.closest(".btn-comprada") || e.target.closest(".comprada-overlay")) return;
 
   const img = e.target.closest("img");
   if (!img) return;
 
-  modal.style.display = "flex";
-  modal.style.pointerEvents = "auto";
-  modalImg.src = img.src;
+  zoomModal.style.display       = "flex";
+  zoomModal.style.pointerEvents = "auto";
+  zoomModalImg.src              = img.src;
 });
 
-modal.addEventListener("click", () => {
-  modal.style.display = "none";
-  modal.style.pointerEvents = "none";
+zoomModal.addEventListener("click", () => {
+  zoomModal.style.display       = "none";
+  zoomModal.style.pointerEvents = "none";
 });
 
 // Leyenda
@@ -555,8 +598,7 @@ document.querySelectorAll('.info').forEach(info => {
 // ==============================
 function renderLogEntry(entry) {
   const lines = entry.split('\n').filter(l => l.trim());
-  let cards = '';
-  let totals = '';
+  let cards = '', totals = '';
 
   lines.forEach(line => {
     if (line.startsWith('📅')) return;
@@ -576,7 +618,7 @@ function renderLogEntry(entry) {
     if (cardMatch) {
       const [, name, price, min, date] = cardMatch;
       const pNum = parseFloat(price), mNum = parseFloat(min);
-      const cls = pNum <= mNum * 0.9 ? 'hc-sniper' : pNum <= mNum ? 'hc-good' : 'hc-bad';
+      const cls  = pNum <= mNum * 0.9 ? 'hc-sniper' : pNum <= mNum ? 'hc-good' : 'hc-bad';
       cards += `
         <div class="hc-row">
           <span class="hc-name">${name}</span>
@@ -592,7 +634,7 @@ function renderLogEntry(entry) {
 
 function loadHistoryByDay() {
   const history = JSON.parse(localStorage.getItem("historyLogs")) || {};
-  const output = document.getElementById("historyOutput");
+  const output  = document.getElementById("historyOutput");
   output.innerHTML = "";
 
   Object.keys(history).reverse().forEach(date => {
@@ -631,14 +673,6 @@ function loadHistoryByDay() {
   });
 }
 
-function deleteHistoryEntry(date, index) {
-  let history = JSON.parse(localStorage.getItem("historyLogs")) || {};
-  history[date].splice(index, 1);
-  if (history[date].length === 0) delete history[date];
-  localStorage.setItem("historyLogs", JSON.stringify(history));
-  loadHistoryByDay();
-}
-
 // ==============================
 // 🔄 12. PRECIOS AUTOMÁTICOS
 // ==============================
@@ -650,33 +684,31 @@ async function fetchAllPrices() {
     return;
   }
 
-  const btn = document.getElementById("updatePricesBtn");
+  const btn    = document.getElementById("updatePricesBtn");
   const status = document.getElementById("updateStatus");
   btn.disabled = true;
   status.textContent = "";
 
-  let updated = 0;
-  let failed = 0;
+  let updated = 0, failed = 0;
 
   for (let i = 0; i < cardsData.length; i++) {
     const card = cardsData[i];
     status.textContent = `⏳ ${i + 1}/${cardsData.length} — ${card.name}`;
 
     try {
-      const res = await fetch(`${PRICE_PROXY_URL}?url=${encodeURIComponent(card.link)}`);
+      const res  = await fetch(`${PRICE_PROXY_URL}?url=${encodeURIComponent(card.link)}`);
       const data = await res.json();
 
       if (data.price && !isNaN(data.price)) {
         const priceInput = document.getElementById(`price-${card.id}`);
-        const minInput = document.getElementById(`min-${card.id}`);
+        const minInput   = document.getElementById(`min-${card.id}`);
         if (priceInput) {
-          const now = new Date();
+          const now   = new Date();
           const today = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}`;
 
           const dateMarket = document.getElementById(`date-market-${card.id}`);
           const dateMin    = document.getElementById(`date-min-${card.id}`);
 
-          // La fecha actual de mercado pasa a ser la fecha del registrado
           if (minInput && dateMin) {
             const oldPrice = parseFloat(priceInput.value);
             if (!isNaN(oldPrice) && oldPrice > 0) {
@@ -713,4 +745,31 @@ async function fetchAllPrices() {
   btn.disabled = false;
   status.textContent = `✅ ${updated} actualizadas${failed ? ` · ⚠️ ${failed} sin precio` : ""}`;
   setTimeout(() => { status.textContent = ""; }, 5000);
+}
+
+// ==============================
+// 🌅 13. AUTO-FETCH DIARIO
+// ==============================
+async function autoFetchIfNeeded() {
+  const lastFetch = localStorage.getItem("lastAutoFetch");
+  const now       = Date.now();
+  const WEEK_MS   = 7 * 24 * 60 * 60 * 1000;
+  if (lastFetch && (now - parseInt(lastFetch)) < WEEK_MS) return;
+
+  const status = document.getElementById("updateStatus");
+  if (status) status.textContent = "🌅 Actualizando precios del día...";
+
+  await fetchAllPrices();
+  saveHistoryLog();
+  localStorage.setItem("lastAutoFetch", Date.now().toString());
+}
+
+autoFetchIfNeeded();
+
+function flashCard(cardId, type) {
+  const el = document.getElementById(`price-${cardId}`)?.closest(".card");
+  if (!el) return;
+  el.style.transition = "box-shadow 0.3s ease";
+  el.style.boxShadow  = type === "ok" ? "0 0 25px rgba(34,197,94,0.8)" : "0 0 25px rgba(239,68,68,0.8)";
+  setTimeout(() => { el.style.boxShadow = ""; }, 1200);
 }
