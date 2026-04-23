@@ -44,6 +44,8 @@ const cardsData = [
 const binder = document.getElementById("binderView");
 const wrapper = document.getElementById("binderViewWrapper");
 
+
+
 // ==============================
 // 🧩 2. CREAR CARTAS (DOM)
 // ==============================
@@ -86,27 +88,29 @@ cardsData.forEach((card, index) => {
         </div>
       </div>
 
-    <div class="row condition-row">
-      <span>⭐</span>
-      <select id="cond-${card.id}">
-        <option value="">-</option>
-        <option value="PO">PO</option>
-        <option value="PL">PL</option>
-        <option value="LP">LP</option>
-        <option value="GD">GD</option>
-        <option value="EX">EX</option>
-      </select>
+    <div class="row">
+        <span>✔</span>
+        <input type="checkbox" id="check-${card.id}">
     </div>
+
+      <div class="row condition-row">
+        <span>⭐</span>
+        <select id="cond-${card.id}">
+          <option value="--">--</option>
+          <option value="PO" ${card.condition === "PO" ? "selected" : ""}>PO</option>
+          <option value="PL" ${card.condition === "PL" ? "selected" : ""}>PL</option>
+          <option value="LP" ${card.condition === "LP" ? "selected" : ""}>LP</option>
+          <option value="GD" ${card.condition === "GD" ? "selected" : ""}>GD</option>
+          <option value="EX" ${card.condition === "EX" ? "selected" : ""}>EX</option>
+        </select>
+      </div>
 
       <div class="row">
         <span>📅</span>
         <input type="text" id="date-${card.id}" placeholder="2026-04-21">
       </div>
 
-      <div class="row">
-        <span>✔</span>
-        <input type="checkbox" id="check-${card.id}">
-      </div>
+      
 
     </div>
 
@@ -146,20 +150,30 @@ document.addEventListener("input", (e) => {
 
   if (el.type === "checkbox") {
     localStorage.setItem(el.id, el.checked);
+
+    // 🔥 SOLO esto para checkbox
+    updateStats();
+    updateConditionVisibility();
+
   } else {
     localStorage.setItem(el.id, el.value);
-  }
 
-  updateAll();
+    updateStats();
+    updateCardColors();
+    updateRanking();
+  }
 });
 
 
 // 🔹 SELECTS
 document.addEventListener("change", (e) => {
   const el = e.target;
+
   if (el.tagName === "SELECT") {
     localStorage.setItem(el.id, el.value);
-    updateAll();
+
+    updateConditionColors();
+    updateConditionVisibility();
   }
 });
 
@@ -419,7 +433,7 @@ document.querySelectorAll('input[type="date"]').forEach(input => {
 // 🎴 11. CONDICIÓN DE CARTAS
 // ==============================
 
-function updateConditionVisibility() {
+/*function updateConditionVisibility() {
   const cards = document.querySelectorAll(".card");
 
   cards.forEach(card => {
@@ -431,7 +445,7 @@ function updateConditionVisibility() {
     condRow.style.display = check.checked ? "flex" : "none";
   });
 }
-
+*/
 function updateConditionColors() {
   document.querySelectorAll(".card").forEach(card => {
     const select = card.querySelector('[id^="cond-"]');
@@ -706,14 +720,21 @@ for (let i = current; i < totalSlots; i++) {
 const modal = document.getElementById("zoomModal");
 const modalImg = document.getElementById("zoomImg");
 
-// 👉 abrir zoom
 document.addEventListener("click", (e) => {
 
-  const img = e.target.closest("img"); // 🔥 clave
+  // 🔒 BLOQUEAR inputs y selects
+  if (
+    e.target.closest("select") ||
+    e.target.closest("input") ||
+    e.target.closest(".info")
+  ) return;
+
+  const img = e.target.closest("img");
 
   if (!img) return;
 
   modal.style.display = "flex";
+  modal.style.pointerEvents = "auto";
   modalImg.src = img.src;
 
 });
@@ -721,6 +742,7 @@ document.addEventListener("click", (e) => {
 // 👉 cerrar
 modal.addEventListener("click", () => {
   modal.style.display = "none";
+  modal.style.pointerEvents = "none";
 });
 
 document.getElementById("toggleLegend").addEventListener("click", () => {
@@ -730,7 +752,7 @@ document.getElementById("toggleLegend").addEventListener("click", () => {
 
 
 
-  card.addEventListener("mouseleave", () => {
+  /*card.addEventListener("mouseleave", () => {
     card.style.transform = "";
   });
 
@@ -778,8 +800,9 @@ window.addEventListener("scroll", () => {
     document.body.classList.remove("scrolling");
   }, 150);
 });
+*/
 
-document.querySelectorAll(".card").forEach(card => {
+/*document.querySelectorAll(".card").forEach(card => {
 
   let rect;
 
@@ -808,6 +831,7 @@ document.querySelectorAll(".card").forEach(card => {
   });
 
 });
+*/
 
 const hero = document.querySelector(".hero");
 
@@ -880,6 +904,44 @@ function spawnStar() {
   }, duration * 1000);
 }
 
+document.addEventListener("click", (e) => {
+
+  const img = e.target.closest("img");
+
+  // SOLO si haces click en imagen
+  if (!img) return;
+
+  // 🚫 evitar inputs
+  if (e.target.closest(".info")) return;
+
+  modal.style.display = "flex";
+  modalImg.src = img.src;
+});
+
+document.addEventListener("click", function(e) {
+  if (
+    e.target.tagName === "SELECT" ||
+    e.target.tagName === "OPTION" ||
+    e.target.closest("select")
+  ) {
+    e.stopPropagation();
+  }
+});
+
+document.addEventListener("click", function(e) {
+  if (
+    e.target.tagName === "INPUT" ||
+    e.target.tagName === "SELECT"
+  ) {
+    e.stopPropagation();
+  }
+});
+
+document.querySelectorAll('.info').forEach(info => {
+  info.addEventListener('click', e => e.stopPropagation());
+  info.addEventListener('mousedown', e => e.stopPropagation());
+});
+
 
 
 function updateAll() {
@@ -891,3 +953,7 @@ function updateAll() {
 }
 
 updateAll();
+
+document.addEventListener("click", (e) => {
+  console.log("CLICK EN:", e.target);
+});

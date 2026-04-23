@@ -59,8 +59,7 @@ h1 {
   border: 1px solid #1f2937;
   border-radius: 12px;
 
-  will-change: transform;
-  transform-style: preserve-3d;
+
 
   position: relative;
   
@@ -109,6 +108,7 @@ h1 {
   gap: 6px;
   margin: 4px 0;
 }
+
 
 .row span {
   width: 18px;
@@ -1668,3 +1668,4 @@ body.scrolling .hero-glow {
     opacity: 1;
   }
 }
+
