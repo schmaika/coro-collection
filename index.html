@@ -16,18 +16,20 @@
 <!-- ============================== -->
 <div class="hero">
 
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
-  <div class="shooting-star"></div>
+  <div class="stars-container">
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+  </div>
 
   
   <div class="pokeball"></div>
@@ -36,59 +38,44 @@
 
   <div class="hero-glow"></div>
 
-  <img src="images/shining-mew-card.jpg" class="hero-art">
+  <img src="images/mew-card.png" class="hero-art">
 
   <div class="hero-center">
-      <h1 class="hero-title">CoroCoro Promos</h1>
+      <h1 class="hero-title"><span class="title-coro">CoroCoro</span> <span class="title-promos">Promos</span></h1>
       <div class="hero-sub">✦ 1996–2000 ✦</div>
     </div>
 
-</div>
+  <div class="hero-content">
 
-<div class="hero-content">
+    <button id="binderBtn" class="binder-btn">📕 Binder</button>
 
+    <div class="stats">
+      📦 <span id="total">0</span> cartas |
+      ✅ <span id="completed">0</span> |
+      📊 <span id="percent">0%</span>
+    </div>
 
-  <button id="binderBtn" class="binder-btn">📕 Binder</button>
+    <div class="progress-bar">
+      <div id="progress-fill"></div>
+    </div>
 
-<!-- ============================== -->
-<!-- 📊 2. STATS -->
-<!-- ============================== -->
+    <div class="money-block">
+      <div class="money-card">
+        <div class="money-title">📉 Mercado</div>
+        <div class="money-value" id="totalMin">0€</div>
+      </div>
+      <div class="money-card">
+        <div class="money-title">💰 Gastado</div>
+        <div class="money-value" id="totalSpent">0€</div>
+      </div>
+      <div class="money-card">
+        <div class="money-title">💸 Ahorro</div>
+        <div class="money-value" id="totalSaved">0€</div>
+      </div>
+    </div>
 
- 
-  <div class="stats">
-    📦 <span id="total">0</span> cartas |
-    ✅ <span id="completed">0</span> |
-    📊 <span id="percent">0%</span>
   </div>
 
-<!-- ============================== -->
-<!-- 📈 3. BARRA PROGRESO -->
-<!-- ============================== -->
-
-  <div class="progress-bar">
-    <div id="progress-fill"></div>
-  </div>
-
-<!-- ============================== -->
-<!-- 💰 4. DINERO -->
-<!-- ============================== -->
-
-  <div class="money-block">
-  <div class="money-card">
-    <div class="money-title">📉 Mercado</div>
-    <div class="money-value" id="totalMin">0€</div>
-  </div>
-
-  <div class="money-card">
-    <div class="money-title">💰 Gastado</div>
-    <div class="money-value" id="totalSpent">0€</div>
-  </div>
-
-  <div class="money-card">
-    <div class="money-title">💸 Ahorro</div>
-    <div class="money-value" id="totalSaved">0€</div>
-  </div>
-  </div>
 </div>
 
 
