@@ -1,5 +1,11 @@
+// @ts-nocheck
 // ==============================
-// 📦 1. DATOS (CARDS)
+// CONFIG PRECIOS AUTO
+// ==============================
+const PRICE_PROXY_URL = "https://script.google.com/macros/s/AKfycbyT9VAbiC8Hb5oJYyFV2fJeVEMJvR452ypmFp_eMwNUg5KXh1sFCuj3NToZeeVNkRfUQA/exec";
+
+// ==============================
+// DATOS (CARDS)
 // ==============================
 const cardsData = [
 
@@ -62,31 +68,34 @@ cardsData.forEach((card, index) => {
 
     <div class="info">
 
-      <div class="row">
-        <span>💰</span>
+      <div class="price-row">
+        <span class="price-icon">💰</span>
         <div class="price-input">
           <span class="euro">€</span>
-          <input id="price-${card.id}" value="${card.price}">
+          <input id="price-${card.id}" value="${card.price}" class="val-market" readonly tabindex="-1">
         </div>
+        <input id="date-market-${card.id}" class="date-inline" placeholder="--/--" readonly tabindex="-1">
       </div>
 
-      <div class="row">
-        <span>📉</span>
+      <div class="price-row">
+        <span class="price-icon">📉</span>
         <div class="price-input">
           <span class="euro">€</span>
-          <input id="min-${card.id}" value="${card.min}">
+          <input id="min-${card.id}" value="${card.min}" class="val-reg" readonly tabindex="-1">
         </div>
+        <input id="date-min-${card.id}" class="date-inline" placeholder="--/--" readonly tabindex="-1">
       </div>
 
-      <div class="row">
-        <span>🧾</span>
+      <div class="price-row">
+        <span class="price-icon">🧾</span>
         <div class="price-input">
           <span class="euro">€</span>
-          <input id="buy-${card.id}" placeholder="0">
+          <input id="buy-${card.id}" class="val-buy" placeholder="0">
         </div>
+        <input id="date-buy-${card.id}" class="date-inline" placeholder="--/--" readonly tabindex="-1">
       </div>
 
-      <div class="row">
+      <div class="row" style="margin-top:6px">
         <span>✔</span>
         <input type="checkbox" id="check-${card.id}">
       </div>
@@ -101,11 +110,6 @@ cardsData.forEach((card, index) => {
           <option value="GD" ${card.condition === "GD" ? "selected" : ""}>GD</option>
           <option value="EX" ${card.condition === "EX" ? "selected" : ""}>EX</option>
         </select>
-      </div>
-
-      <div class="row">
-        <span>📅</span>
-        <input type="text" id="date-${card.id}" placeholder="2026-04-21">
       </div>
 
     </div>
@@ -127,6 +131,9 @@ document.querySelectorAll("input, select").forEach(input => {
   if (saved !== null) {
     if (input.type === "checkbox") {
       input.checked = saved === "true";
+    } else if (input.classList.contains("date-inline") && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+      const [, m, d] = saved.split("-");
+      input.value = `${d}/${m}`;
     } else {
       input.value = saved;
     }
@@ -311,6 +318,16 @@ document.addEventListener("input", (e) => {
 
   if (el.type === "checkbox") {
     localStorage.setItem(el.id, el.checked);
+    if (el.checked) {
+      const now = new Date();
+      const today = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}`;
+      const cardId = el.id.replace("check-", "");
+      const dateBuy = document.getElementById(`date-buy-${cardId}`);
+      if (dateBuy && !dateBuy.value) {
+        dateBuy.value = today;
+        localStorage.setItem(`date-buy-${cardId}`, today);
+      }
+    }
     updateStats();
     updateConditionVisibility();
   } else {
@@ -364,12 +381,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Guardar log
 document.getElementById("saveLog").addEventListener("click", () => {
+  const today = new Date().toLocaleDateString();
+  const history = JSON.parse(localStorage.getItem("historyLogs")) || {};
+
+  if (history[today]) {
+    const btn = document.getElementById("saveLog");
+    const original = btn.textContent;
+    btn.textContent = "⚠️ Ya guardado hoy";
+    btn.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.style.background = "";
+    }, 2500);
+    return;
+  }
+
   const cards = document.querySelectorAll(".card");
   let log = "";
   let totalMin = 0;
   let totalSpent = 0;
 
-  const today = new Date().toLocaleDateString();
   log += `📅 ${today}\n\n`;
 
   cards.forEach(card => {
@@ -388,9 +419,7 @@ document.getElementById("saveLog").addEventListener("click", () => {
   log += `\n📉 TOTAL MERCADO: ${totalMin.toFixed(2)}€`;
   log += `\n💰 TOTAL GASTADO: ${totalSpent.toFixed(2)}€\n\n`;
 
-  let history = JSON.parse(localStorage.getItem("historyLogs")) || {};
-  if (!history[today]) history[today] = [];
-  history[today].push(log);
+  history[today] = [log];
   localStorage.setItem("historyLogs", JSON.stringify(history));
 });
 
@@ -417,14 +446,19 @@ document.getElementById("showBought").addEventListener("click", () => {
       if (!check?.checked) return;
 
       const name = card.querySelector("h3").textContent;
-      const buy = card.querySelector('[id^="buy-"]')?.value || "-";
-      const cond = card.querySelector('[id^="cond-"]')?.value || "-";
-      const date = card.querySelector('[id^="date-"]')?.value || "-";
+      const buy  = card.querySelector('[id^="buy-"]')?.value || "-";
+      const cond = card.querySelector('[id^="cond-"]')?.value || "--";
+      const date = card.querySelector('[id^="date-buy-"]')?.value || "-";
+      const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" }[cond] || "#94a3b8";
 
       html += `
         <div class="bought-item">
-          <strong>${name}</strong><br>
-          💰 ${buy}€ | ⭐ ${cond} | 📅 ${date}
+          <div class="bi-name">${name}</div>
+          <div class="bi-details">
+            <span class="bi-price">🧾 ${buy !== "-" ? buy + "€" : "-"}</span>
+            <span class="bi-cond" style="color:${condColor}">⭐ ${cond}</span>
+            <span class="bi-date">📅 ${date}</span>
+          </div>
         </div>
       `;
     });
@@ -443,23 +477,29 @@ document.getElementById("binderBtn").addEventListener("click", () => {
   if (binderActive) {
     wrapper.classList.remove("hidden");
     container.style.display = "none";
+    setTimeout(() => wrapper.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 
     let html = "";
+
+    const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" };
 
     cards.forEach(card => {
       const check = card.querySelector('[id^="check-"]');
       if (!check?.checked) return;
 
       const name = card.querySelector("h3").textContent;
-      const img = card.querySelector("img").src;
-      const cond = card.querySelector('[id^="cond-"]').value || "-";
+      const img  = card.querySelector("img").src;
+      const cond = card.querySelector('[id^="cond-"]').value || "--";
+      const color = condColor[cond] || "#64748b";
 
       html += `
         <div class="binder-card">
-          <img src="${img}">
+          <div class="binder-sleeve">
+            <img src="${img}">
+          </div>
           <div class="binder-info">
-            <strong>${name}</strong><br>
-            ⭐ ${cond}
+            <span class="binder-name">${name}</span>
+            <span class="binder-cond" style="color:${color}">${cond}</span>
           </div>
         </div>
       `;
@@ -467,14 +507,10 @@ document.getElementById("binderBtn").addEventListener("click", () => {
 
     binder.innerHTML = html;
 
-    const totalSlots = 9;
+    const totalSlots = Math.ceil(binder.querySelectorAll(".binder-card").length / 9) * 9 || 9;
     const current = binder.querySelectorAll(".binder-card").length;
     for (let i = current; i < totalSlots; i++) {
-      binder.innerHTML += `
-        <div class="binder-card" style="opacity:0.2;">
-          <div style="height:150px; display:flex; align-items:center; justify-content:center;">🟦</div>
-        </div>
-      `;
+      binder.innerHTML += `<div class="binder-card binder-empty"><span>+</span></div>`;
     }
 
   } else {
@@ -517,6 +553,43 @@ document.querySelectorAll('.info').forEach(info => {
 // ==============================
 // 📜 11. HISTORIAL
 // ==============================
+function renderLogEntry(entry) {
+  const lines = entry.split('\n').filter(l => l.trim());
+  let cards = '';
+  let totals = '';
+
+  lines.forEach(line => {
+    if (line.startsWith('📅')) return;
+
+    if (line.startsWith('📉 TOTAL')) {
+      const m = line.match(/([\d.]+)€/);
+      totals += `<div class="ht-row"><span class="ht-label">📉 Mercado</span><span class="ht-value ht-market">${m ? m[1] + '€' : '-'}</span></div>`;
+      return;
+    }
+    if (line.startsWith('💰 TOTAL')) {
+      const m = line.match(/([\d.]+)€/);
+      totals += `<div class="ht-row"><span class="ht-label">💰 Gastado</span><span class="ht-value ht-spent">${m ? m[1] + '€' : '-'}</span></div>`;
+      return;
+    }
+
+    const cardMatch = line.match(/^(.+?) → ([\d.]+)€ \(min ([\d.]+)€\) \[(.+)\]$/);
+    if (cardMatch) {
+      const [, name, price, min, date] = cardMatch;
+      const pNum = parseFloat(price), mNum = parseFloat(min);
+      const cls = pNum <= mNum * 0.9 ? 'hc-sniper' : pNum <= mNum ? 'hc-good' : 'hc-bad';
+      cards += `
+        <div class="hc-row">
+          <span class="hc-name">${name}</span>
+          <span class="hc-min">📉 ${min}€</span>
+          <span class="hc-price ${cls}">${price}€</span>
+          <span class="hc-date">${date !== '-' ? date : ''}</span>
+        </div>`;
+    }
+  });
+
+  return `<div class="hc-list">${cards}</div><div class="ht-totals">${totals}</div>`;
+}
+
 function loadHistoryByDay() {
   const history = JSON.parse(localStorage.getItem("historyLogs")) || {};
   const output = document.getElementById("historyOutput");
@@ -537,9 +610,10 @@ function loadHistoryByDay() {
     content.className = "history-content hidden";
 
     history[date].forEach(entry => {
-      const p = document.createElement("pre");
-      p.textContent = entry;
-      content.appendChild(p);
+      const div = document.createElement("div");
+      div.className = "history-entry";
+      div.innerHTML = renderLogEntry(entry);
+      content.appendChild(div);
     });
 
     header.addEventListener("click", () => content.classList.toggle("hidden"));
@@ -563,4 +637,80 @@ function deleteHistoryEntry(date, index) {
   if (history[date].length === 0) delete history[date];
   localStorage.setItem("historyLogs", JSON.stringify(history));
   loadHistoryByDay();
+}
+
+// ==============================
+// 🔄 12. PRECIOS AUTOMÁTICOS
+// ==============================
+document.getElementById("updatePricesBtn").addEventListener("click", fetchAllPrices);
+
+async function fetchAllPrices() {
+  if (!PRICE_PROXY_URL) {
+    alert("⚠️ Primero configura PRICE_PROXY_URL en script.js con tu Google Apps Script URL.");
+    return;
+  }
+
+  const btn = document.getElementById("updatePricesBtn");
+  const status = document.getElementById("updateStatus");
+  btn.disabled = true;
+  status.textContent = "";
+
+  let updated = 0;
+  let failed = 0;
+
+  for (let i = 0; i < cardsData.length; i++) {
+    const card = cardsData[i];
+    status.textContent = `⏳ ${i + 1}/${cardsData.length} — ${card.name}`;
+
+    try {
+      const res = await fetch(`${PRICE_PROXY_URL}?url=${encodeURIComponent(card.link)}`);
+      const data = await res.json();
+
+      if (data.price && !isNaN(data.price)) {
+        const priceInput = document.getElementById(`price-${card.id}`);
+        const minInput = document.getElementById(`min-${card.id}`);
+        if (priceInput) {
+          const now = new Date();
+          const today = `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}`;
+
+          const dateMarket = document.getElementById(`date-market-${card.id}`);
+          const dateMin    = document.getElementById(`date-min-${card.id}`);
+
+          // La fecha actual de mercado pasa a ser la fecha del registrado
+          if (minInput && dateMin) {
+            const oldPrice = parseFloat(priceInput.value);
+            if (!isNaN(oldPrice) && oldPrice > 0) {
+              minInput.value = oldPrice.toFixed(2);
+              localStorage.setItem(`min-${card.id}`, oldPrice.toFixed(2));
+            }
+            const prevMarketDate = dateMarket ? dateMarket.value : today;
+            dateMin.value = prevMarketDate || today;
+            localStorage.setItem(`date-min-${card.id}`, dateMin.value);
+          }
+
+          priceInput.value = data.price.toFixed(2);
+          localStorage.setItem(`price-${card.id}`, data.price.toFixed(2));
+
+          if (dateMarket) {
+            dateMarket.value = today;
+            localStorage.setItem(`date-market-${card.id}`, today);
+          }
+          updated++;
+          flashCard(card.id, "ok");
+        }
+      } else {
+        flashCard(card.id, "fail");
+        failed++;
+      }
+    } catch {
+      failed++;
+    }
+
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  updateAll();
+  btn.disabled = false;
+  status.textContent = `✅ ${updated} actualizadas${failed ? ` · ⚠️ ${failed} sin precio` : ""}`;
+  setTimeout(() => { status.textContent = ""; }, 5000);
 }
