@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://coro-coro-collection.pages.dev/sitemap.xml

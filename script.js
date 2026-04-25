@@ -166,7 +166,7 @@ cardsData.forEach((card, index) => {
   div.dataset.index = index;
 
   div.innerHTML = `
-    <img src="${card.img}">
+    <img src="${card.img}" alt="${card.name} CoroCoro Promo carta Pokémon">
     <h3>${card.name}</h3>
 
     <div class="info">
