@@ -33,6 +33,11 @@ const cardsData = [
   { name: "Misty's Tentacool", id: "misty-tentacool", img: "images/misty-tentacool.jpg", price: 1.7, min: 1.4, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Mistys-Tentacool-UNP" },
   { name: "Lt. Surge's Jolteon", id: "lt-surge-jolteon", img: "images/lt-surge-jolteon.jpg", price: 7, min: 6, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Lt-Surges-Jolteon" },
 
+  // 🎭 ESPECIALES
+  { name: "Imakuni?", id: "imakuni", img: "images/imakuni.jpg", price: 0, min: 0, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Imakuni" },
+  { name: "Meowth V2", id: "meowth-v2", img: "images/meowth_v2.jpg", price: 0, min: 0, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Meowth-V2-UNP" },
+  { name: "Flying Pikachu", id: "flying-pikachu", img: "images/flying_pikachu.jpg", price: 0, min: 0, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Flying-Pikachu-V1-UNP" },
+
   // 🏁 FINAL
   { name: "Togepi", id: "togepi", img: "images/togepi.jpg", price: 2.5, min: 2, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Togepi-V2-UNP" },
   { name: "Marill", id: "marill", img: "images/marill.jpg", price: 2, min: 1.5, link: "https://www.cardmarket.com/es/Pokemon/Products/Singles/Unnumbered-Promos/Marill-V1-UNP" },
