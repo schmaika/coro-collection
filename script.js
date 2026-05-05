@@ -81,6 +81,7 @@ const wrapper   = document.getElementById("binderViewWrapper");
           <option value="LP">LP — Light Played</option>
           <option value="GD">GD — Good</option>
           <option value="EX">EX — Excellent</option>
+          <option value="NM">NM — Near Mint</option>
         </select>
       </div>
       <div class="comprada-actions">
@@ -485,7 +486,7 @@ document.getElementById("showBought").addEventListener("click", () => {
       const buy       = localStorage.getItem(`buy-${id}`) || "-";
       const cond      = localStorage.getItem(`cond-${id}`) || "--";
       const date      = localStorage.getItem(`date-buy-${id}`) || "-";
-      const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" }[cond] || "#94a3b8";
+      const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15", NM:"#ffffff" }[cond] || "#94a3b8";
 
       html += `
         <div class="bought-item">
@@ -516,7 +517,7 @@ document.getElementById("binderBtn").addEventListener("click", () => {
     setTimeout(() => wrapper.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 
     let html = "";
-    const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15" };
+    const condColor = { PO:"#ef4444", PL:"#f97316", LP:"#eab308", GD:"#22c55e", EX:"#facc15", NM:"#ffffff" };
 
     cards.forEach(card => {
       const cbtn  = card.querySelector('[id^="comprada-"]');

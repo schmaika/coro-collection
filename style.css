@@ -895,6 +895,7 @@ select[data-cond="PL"] { color: #f97316; }
 select[data-cond="LP"] { color: #eab308; }
 select[data-cond="GD"] { color: #22c55e; }
 select[data-cond="EX"] { color: #00d4f5; }
+select[data-cond="NM"] { color: #ffffff; font-weight: 700; }
 
 .card[data-cond="PO"] { border-color: #374151; box-shadow: 0 0 8px rgba(55,65,81,0.5); }
 .card[data-cond="PL"] { border-color: #92400e; box-shadow: 0 0 10px rgba(146,64,14,0.5); }
@@ -923,6 +924,24 @@ select[data-cond="EX"] { color: #00d4f5; }
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 200% 50%; }
+}
+
+.card[data-cond="NM"] {
+  border: 1px solid #ffffff;
+  overflow: hidden;
+  box-shadow: 0 0 18px rgba(255,255,255,0.7), 0 0 35px rgba(200,230,255,0.4);
+}
+
+.card[data-cond="NM"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255,255,255,0.4), rgba(0,220,255,0.4), rgba(255,200,255,0.4), rgba(200,255,200,0.4));
+  background-size: 300% 300%;
+  mix-blend-mode: color-dodge;
+  opacity: 0.25;
+  animation: holoShift 3s linear infinite;
+  pointer-events: none;
 }
 
 /* ============================== */
